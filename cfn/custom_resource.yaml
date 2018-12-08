@@ -38,6 +38,16 @@ Parameters:
         Description: The App Secret/Password used to authenticate to Azure
         Type: String
         NoEcho: true
+    
+    GoogleCloudCredentialsSecretName:
+        Description: The name of the Secrets Manager secret for the Google Cloud credentials
+        Type: String
+        Default: MultiCloudGoogleCloudCredentials
+    
+    GoogleCloudCredentialsJson:
+        Description: The JSON file contents used to authenticate to Google Cloud
+        Type: String
+        NoEcho: true
 
 Metadata:
 
@@ -49,6 +59,7 @@ Metadata:
               - S3Bucket
               - S3Key
               - AzureCredentialsSecretName
+              - GoogleCloudCredentialsSecretName
           - Label:
                 default: "Azure Credentials"
             Parameters:
@@ -56,6 +67,10 @@ Metadata:
               - AzureCredentialDirectoryId
               - AzureCredentialAppId
               - AzureCredentialAppPassword
+          - Label:
+                default: "Google Cloud Credentials"
+            Parameters:
+              - GoogleCloudCredentialsJson
         ParameterLabels:
             S3Bucket:
                 default: "S3 Bucket"
@@ -71,6 +86,8 @@ Metadata:
                 default: "App ID"
             AzureCredentialAppPassword:
                 default: "App Password/Secret"
+            GoogleCloudCredentialsJson:
+                default: "Contents of JSON file for service account"
 
 Resources:
 
@@ -86,6 +103,13 @@ Resources:
                     "appPassword":"${AzureCredentialAppPassword}"
                 }'
 
+    GoogleCloudCredentials:
+        Type: AWS::SecretsManager::Secret
+        Properties:
+            Name: !Ref GoogleCloudCredentialsSecretName
+            Description: The Google Cloud credentials for the Multi Cloud transform
+            SecretString: !Ref GoogleCloudCredentialsJson
+
     TransformFunction:
         Type: AWS::Lambda::Function
         Properties:
@@ -95,6 +119,7 @@ Resources:
             Environment:
                 Variables:
                     AZURE_SECRET_ID: !Ref AzureCredentials
+                    GOOGLE_CLOUD_SECRET_ID: !Ref GoogleCloudCredentials
             Handler: index.handler
             Role: !GetAtt 'LambdaExecutionRole.Arn'
             Runtime: python3.6
@@ -129,6 +154,7 @@ Resources:
                           - secretsmanager:GetSecretValue
                         Resource:
                           - !Ref AzureCredentials
+                          - !Ref GoogleCloudCredentials
 
     TransformFunctionPermissions:
         Type: AWS::Lambda::Permission

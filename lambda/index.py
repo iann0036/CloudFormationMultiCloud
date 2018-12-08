@@ -7,6 +7,7 @@ import os
 import traceback
 import sys
 from azure_handler import AzureResourceHandler
+from googlecloud_handler import GoogleCloudResourceHandler
 
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
@@ -21,9 +22,14 @@ def handler(event, context):
             LOGGER.info('REQUEST RECEIVED:\n %s', event)
             LOGGER.info('REQUEST RECEIVED:\n %s', context)
 
-            azure_credentials = get_secret(os.environ['AZURE_SECRET_ID'])
-            azure_resource_handler = AzureResourceHandler(azure_credentials)
-            response_data = azure_resource_handler.process(event)
+            if event['ResourceType'].startswith("Custom::Azure"):
+                azure_credentials = get_secret(os.environ['AZURE_SECRET_ID'])
+                azure_resource_handler = AzureResourceHandler(azure_credentials)
+                response_data = azure_resource_handler.process(event)
+            elif event['ResourceType'].startswith("Custom::GoogleCloud"):
+                google_cloud_credentials = get_secret(os.environ['GOOGLE_CLOUD_SECRET_ID'])
+                google_cloud_resource_handler = GoogleCloudResourceHandler(google_cloud_credentials)
+                response_data = google_cloud_resource_handler.process(event)
 
             if event['RequestType'] == 'Create':
                 send_response(event, context, "SUCCESS", response_data)
@@ -94,7 +100,7 @@ def handle_transform(event, context):
         }
         response = event["fragment"]
         for k in list(response["Resources"].keys()):
-            if response["Resources"][k]["Type"].startswith("Azure::"):
+            if response["Resources"][k]["Type"].startswith("Azure::") or response["Resources"][k]["Type"].startswith("GoogleCloud::"):
                 if "Properties" not in response["Resources"][k]:
                     response["Resources"][k]["Properties"] = {}
                 response["Resources"][k]["Type"] = "Custom::" + response["Resources"][k]["Type"].replace("::","_")

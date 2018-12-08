@@ -1,4 +1,3 @@
-import os
 import traceback
 
 from azure.common.credentials import ServicePrincipalCredentials
