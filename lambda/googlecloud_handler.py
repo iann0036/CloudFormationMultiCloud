@@ -21,7 +21,7 @@ class GoogleCloudResourceHandler:
         else:
             raise Exception('Unhandled Google Cloud resource or request type')
 
-    def wait_for_operation(client, project, zone, operation):
+    def wait_for_operation(self, client, project, zone, operation):
         while True:
             result = client.zoneOperations().get(
                 project=project,
@@ -45,8 +45,6 @@ class GoogleCloudResourceHandler:
             body={
                 'name': resource_properties['Name'],
                 'machineType': "zones/%s/machineTypes/%s" % (resource_properties['Zone'], resource_properties['MachineType']),
-
-                # Specify the boot disk and the image to use as a source.
                 'disks': [
                     {
                         'boot': True,
@@ -56,17 +54,12 @@ class GoogleCloudResourceHandler:
                         }
                     }
                 ],
-
-                # Specify a network interface with NAT to access the public
-                # internet.
                 'networkInterfaces': [{
                     'network': 'global/networks/default',
                     'accessConfigs': [
                         {'type': 'ONE_TO_ONE_NAT', 'name': 'External NAT'}
                     ]
                 }],
-
-                # Allow the instance to access cloud storage and logging.
                 'serviceAccounts': [{
                     'email': 'default',
                     'scopes': [
