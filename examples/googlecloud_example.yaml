@@ -12,7 +12,8 @@ Resources:
         Properties:
             Name: mynetwork
             Project: cfnmulticlouddemo
-            Description: Test Network
+            Region: us-west2
+            Description: Sample Network
             RoutingConfig:
                 RoutingMode: REGIONAL
             AutoCreateSubnetworks: false
@@ -20,10 +21,11 @@ Resources:
     myGoogleCloudSubnetwork:
         Type: GoogleCloud::Compute::Subnetwork
         Properties:
-            Name: mynetwork
+            Name: mysubnetwork
             Project: cfnmulticlouddemo
             Region: us-west2
             Network: !GetAtt myGoogleCloudNetwork.Name
+            Description: Sample Subnetwork
             PrivateIpGoogleAccess: false
             EnableFlowLogs: false
             IpCidrRange: "10.0.0.0/24"
@@ -43,7 +45,10 @@ Resources:
                         Project: debian-cloud
                         Family: debian-9
             NetworkInterfaces:
-              - Network: global/networks/default
+              - Subnetwork:
+                    Project: cfnmulticlouddemo
+                    Region: us-west2
+                    Name: !GetAtt myGoogleCloudSubnetwork.Name
                 AccessConfigs:
                   - Type: ONE_TO_ONE_NAT
                     Name: External NAT
