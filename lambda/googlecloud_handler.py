@@ -22,12 +22,16 @@ class GoogleCloudResourceHandler:
             return self.create_compute_subnetwork(event['ResourceProperties'])
         elif event['RequestType'] == "Create" and event['ResourceType'] == "Custom::GoogleCloud_Compute_Instance":
             return self.create_compute_instance(event['ResourceProperties'])
+        elif event['RequestType'] == "Create" and event['ResourceType'] == "Custom::GoogleCloud_Storage_Bucket":
+            return self.create_storage_bucket(event['ResourceProperties'])
         elif event['RequestType'] == "Delete" and event['ResourceType'] == "Custom::GoogleCloud_Compute_Network":
             return self.delete_compute_network(event['ResourceProperties'])
         elif event['RequestType'] == "Delete" and event['ResourceType'] == "Custom::GoogleCloud_Compute_Subnetwork":
             return self.delete_compute_subnetwork(event['ResourceProperties'])
         elif event['RequestType'] == "Delete" and event['ResourceType'] == "Custom::GoogleCloud_Compute_Instance":
             return self.delete_compute_instance(event['ResourceProperties'])
+        elif event['RequestType'] == "Delete" and event['ResourceType'] == "Custom::GoogleCloud_Storage_Bucket":
+            return self.delete_storage_bucket(event['ResourceProperties'])
         else:
             raise Exception('Unhandled Google Cloud resource or request type')
 
@@ -209,5 +213,33 @@ class GoogleCloudResourceHandler:
         ).execute()
 
         self.wait_for_zone_operation(compute_client, resource_properties['Project'], resource_properties['Zone'], op['name'])
+        
+        return {}
+
+    def create_storage_bucket(self, resource_properties):
+        storage_client = googleapiclient.discovery.build('storage', 'v1', credentials=self.credentials)
+
+        op = storage_client.buckets().insert(
+            project=resource_properties['Project'],
+            body={
+                "name": resource_properties['Name']
+            }
+        ).execute()
+
+        self.wait_for_global_operation(storage_client, resource_properties['Project'], op['name'])
+        
+        return {
+            'Name': resource_properties['Name']
+        }
+
+    def delete_storage_bucket(self, resource_properties):
+        storage_client = googleapiclient.discovery.build('storage', 'v1', credentials=self.credentials)
+
+        op = storage_client.buckets().delete(
+            project=resource_properties['Project'],
+            bucket=resource_properties['Name']
+        ).execute()
+
+        self.wait_for_global_operation(storage_client, resource_properties['Project'], op['name'])
         
         return {}

@@ -5,6 +5,8 @@ from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.compute.models import DiskCreateOption
+from azure.mgmt.storage import StorageManagementClient
+from azure.storage.queue import QueueService
 
 from msrestazure.azure_exceptions import CloudError
 
@@ -32,6 +34,10 @@ class AzureResourceHandler:
             return self.create_network_networkinterface(event['ResourceProperties'])
         elif (event['RequestType'] == "Create" or event['RequestType'] == "Update") and event['ResourceType'] == "Custom::Azure_Compute_VirtualMachine":
             return self.create_compute_virtualmachine(event['ResourceProperties'])
+        elif event['RequestType'] == "Create" and event['ResourceType'] == "Custom::Azure_Storage_StorageAccount":
+            return self.create_storage_storageaccount(event['ResourceProperties'])
+        elif event['RequestType'] == "Create" and event['ResourceType'] == "Custom::Azure_Storage_Queue":
+            return self.create_storage_queue(event['ResourceProperties'])
         elif event['RequestType'] == "Delete" and event['ResourceType'] == "Custom::Azure_Resource_ResourceGroup":
             return self.delete_resource_resourcegroup(event['ResourceProperties'])
         elif event['RequestType'] == "Delete" and event['ResourceType'] == "Custom::Azure_Network_VirtualNetwork":
@@ -42,6 +48,10 @@ class AzureResourceHandler:
             return self.delete_network_networkinterface(event['ResourceProperties'])
         elif event['RequestType'] == "Delete" and event['ResourceType'] == "Custom::Azure_Compute_VirtualMachine":
             return self.delete_compute_virtualmachine(event['ResourceProperties'])
+        elif event['RequestType'] == "Delete" and event['ResourceType'] == "Custom::Azure_Storage_StorageAccount":
+            return self.delete_storage_storageaccount(event['ResourceProperties'])
+        elif event['RequestType'] == "Delete" and event['ResourceType'] == "Custom::Azure_Storage_Queue":
+            return self.delete_storage_queue(event['ResourceProperties'])
         else:
             raise Exception('Unhandled Azure resource or request type')
 
@@ -229,5 +239,62 @@ class AzureResourceHandler:
             vm_name=resource_properties['Name']
         )
         op.wait()
+
+        return {}
+    
+    def create_storage_storageaccount(self, resource_properties):
+        storage_client = StorageManagementClient(self.credentials, self.subscription_id)
+
+        op = storage_client.storage_accounts.create(
+            resource_properties['ResourceGroupName'],
+            resource_properties['Name'],
+            {
+                'sku': {
+                    'name': resource_properties['Sku']['Name']
+                },
+                'kind': resource_properties['Kind'],
+                'location': resource_properties['Location']#,
+                #'accessTier': resource_properties['AccessTier']
+            }
+        )
+        result = op.result()
+
+        return {
+            'Id': result.id,
+            'Name': result.name,
+            'Type': result.type
+        }
+    
+    def delete_storage_storageaccount(self, resource_properties):
+        storage_client = StorageManagementClient(self.credentials, self.subscription_id)
+
+        storage_client.storage_accounts.delete(
+            resource_group_name=resource_properties['ResourceGroupName'],
+            account_name=resource_properties['Name']
+        )
+
+        return {}
+    
+    def create_storage_queue(self, resource_properties):
+        storage_client = StorageManagementClient(self.credentials, self.subscription_id)
+
+        key = storage_client.storage_accounts.list_keys(resource_properties['ResourceGroupName'], resource_properties['AccountName']).keys[0].value
+
+        queue_service = QueueService(account_name=resource_properties['AccountName'], account_key=key)
+
+        queue_service.create_queue(resource_properties['Name'])
+
+        return {
+            'Name': resource_properties['Name']
+        }
+    
+    def delete_storage_queue(self, resource_properties):
+        storage_client = StorageManagementClient(self.credentials, self.subscription_id)
+
+        key = storage_client.storage_accounts.list_keys(resource_properties['ResourceGroupName'], resource_properties['AccountName']).keys[0].value
+
+        queue_service = QueueService(account_name=resource_properties['AccountName'], account_key=key)
+
+        queue_service.delete_queue(resource_properties['Name'])
 
         return {}
