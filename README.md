@@ -2,7 +2,6 @@
 
 > An experiment to add Azure and Google Cloud resource support to CloudFormation.
 
-
 ![Screenshot](assets/screen1.png)
 
 :exclamation: **CAUTION:** This project is currently in alpha stages. Some components may not work as expected and fields may not be validated. Currently, all fields within the example stacks are required.
@@ -14,12 +13,12 @@
 
 Click the above link to deploy the stack which is required to deploy the Transform and Custom Resource handler. You will be asked to input your Azure app credentials and Google JSON server credentials.
 
-If you prefer, you can also manually upsert the custom_resource.yaml stack from source and compile your own copy of the Lambda source. Please note that if you do this, the Python requirements must be vendored from within an Amazon Linux machine.
+If you prefer, you can also manually upsert the [custom_resource.yaml](https://github.com/iann0036/CloudFormationMultiCloud/blob/master/custom_resource.yaml) stack from source and compile your own copy of the Lambda source. Please note that if you do this, the Python requirements must be vendored from within an Amazon Linux machine.
 
 
 ## Usage
 
-Once the handler stack is created, you may use the below resources my adding the `MultiCloud` transform to your stack. This will transform your input template to convert the Azure/Google Cloud resources into Custom Resources that will handle the lifecycle within that cloud provider.
+Once the handler stack is created, you may use the below resources by adding the `MultiCloud` transform to your stack. This will transform your input template to convert the Azure/Google Cloud resources into Custom Resources that will handle the lifecycle within that cloud provider.
 
 The following resources are supported (click the link to see examples):
 
