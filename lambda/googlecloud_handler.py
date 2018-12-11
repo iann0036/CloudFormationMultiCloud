@@ -24,6 +24,8 @@ class GoogleCloudResourceHandler:
             return self.create_compute_instance(event['ResourceProperties'])
         elif event['RequestType'] == "Create" and event['ResourceType'] == "Custom::GoogleCloud_Storage_Bucket":
             return self.create_storage_bucket(event['ResourceProperties'])
+        elif event['RequestType'] == "Create" and event['ResourceType'] == "Custom::GoogleCloud_PubSub_Topic":
+            return self.create_pubsub_topic(event['ResourceProperties'])
         elif event['RequestType'] == "Delete" and event['ResourceType'] == "Custom::GoogleCloud_Compute_Network":
             return self.delete_compute_network(event['ResourceProperties'])
         elif event['RequestType'] == "Delete" and event['ResourceType'] == "Custom::GoogleCloud_Compute_Subnetwork":
@@ -32,6 +34,8 @@ class GoogleCloudResourceHandler:
             return self.delete_compute_instance(event['ResourceProperties'])
         elif event['RequestType'] == "Delete" and event['ResourceType'] == "Custom::GoogleCloud_Storage_Bucket":
             return self.delete_storage_bucket(event['ResourceProperties'])
+        elif event['RequestType'] == "Delete" and event['ResourceType'] == "Custom::GoogleCloud_PubSub_Topic":
+            return self.delete_pubsub_topic(event['ResourceProperties'])
         else:
             raise Exception('Unhandled Google Cloud resource or request type')
 
@@ -241,5 +245,26 @@ class GoogleCloudResourceHandler:
         ).execute()
 
         self.wait_for_global_operation(storage_client, resource_properties['Project'], op['name'])
+        
+        return {}
+
+    def create_pubsub_topic(self, resource_properties):
+        pubsub_client = googleapiclient.discovery.build('pubsub', 'v1', credentials=self.credentials)
+
+        topic = pubsub_client.projects().topics().create(
+            name='projects/%s/topics/%s' % (resource_properties['Project'], resource_properties['Name']),
+            body={}
+        ).execute()
+        
+        return {
+            'Name': resource_properties['Name']
+        }
+
+    def delete_pubsub_topic(self, resource_properties):
+        pubsub_client = googleapiclient.discovery.build('pubsub', 'v1', credentials=self.credentials)
+
+        pubsub_client.projects().topics().delete(
+            topic='projects/%s/topics/%s' % (resource_properties['Project'], resource_properties['Name'])
+        ).execute()
         
         return {}

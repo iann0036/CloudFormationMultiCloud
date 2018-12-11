@@ -5,14 +5,14 @@ Description: AWS CloudFormation to set up a custom CloudFormation resource with 
 Parameters:
 
     S3Bucket:
-        Description: The name of the bucket that contains your packaged source
+        Description: The name of the bucket that contains the Lambda source (leave blank to use latest)
         Type: String
-        Default: ianmckay-scratch
+        Default: ''
     
     S3Key:
-        Description: The name of the ZIP package
+        Description: The key of the ZIP package within the bucket (leave blank to use latest)
         Type: String
-        Default: app.zip
+        Default: ''
     
     AzureCredentialsSecretName:
         Description: The name of the Secrets Manager secret for the Azure credentials
@@ -49,6 +49,10 @@ Parameters:
         Type: String
         NoEcho: true
 
+Conditions:
+
+    S3Defined: !Not [ !Equals [ '', !Ref S3Bucket ] ]
+
 Metadata:
 
     AWS::CloudFormation::Interface:
@@ -73,9 +77,9 @@ Metadata:
               - GoogleCloudCredentialsJson
         ParameterLabels:
             S3Bucket:
-                default: "S3 Bucket"
+                default: "S3 Bucket (leave blank to use latest)"
             S3Key:
-                default: "S3 Key"
+                default: "S3 Key (leave blank to use latest)"
             AzureCredentialsSecretName:
                 default: "Secret Name"
             AzureCredentialSubscriptionId:
@@ -114,8 +118,14 @@ Resources:
         Type: AWS::Lambda::Function
         Properties:
             Code:
-                S3Bucket: !Ref 'S3Bucket'
-                S3Key: !Ref 'S3Key'
+                S3Bucket: !If
+                    - S3Defined
+                    - !Ref S3Bucket
+                    - !Sub 'ianmckay-${AWS::Region}'
+                S3Key: !If
+                    - S3Defined
+                    - !Ref S3Key
+                    - 'multicloud/app.zip'
             Environment:
                 Variables:
                     AZURE_SECRET_ID: !Ref AzureCredentials
